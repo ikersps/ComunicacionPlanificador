@@ -34,6 +34,14 @@ class Drone(Node):
         # rclpy.spin_until_future_complete(self, self.future)
         # return self.future.result()
 
+
+        #TODO: Create priority subscription
+        priority = random.randint(1, 3)
+
+        self.pose_subscription = self.create_subscription(PoseStamped, f'/{drone_id}/pose', self.new_pose_callback, 10)
+        # rclpy.spin_until_future_complete(self, self.future)
+        # return self.future.result()
+
     def callback(self, future):
         response = future.result()
         self.get_logger().info(f'Result of service call: {response}')
@@ -42,6 +50,10 @@ class Drone(Node):
         global drone_id
         wps_array = np.array(msg.wps, dtype=np.float64).reshape((int)(len(msg.wps)/3), 3)
         self.get_logger().info(f'data received {wps_array}')
+
+    def new_pose_callback(self, msg):
+        return msg
+
 
 def main():
     global drone_id
