@@ -17,6 +17,7 @@ class Hits_toolsv2():
         for index in index_positions:  #This index are sorted by their height
             result.append((index, heights))  
             heights += 1
+        
         return result
             
     def nearest_positions(self):
@@ -40,6 +41,10 @@ class Hits_toolsv2():
 
         return positions_result
     
+    # def set_next_position(self, index_with_heights):
+    #     for e in index_with_heights:
+
+
     # def positions_to_coords(self, positions):
     #     result = []
 

@@ -2,15 +2,18 @@ from syst_msgs.srv import AdvService
 from syst_msgs.msg import Waypoints
 import rclpy
 from rclpy.node import Node
+from geometry_msgs.msg import PoseStamped
+import random
 
 import numpy as np
 
 drone_id = ''
+priority = -1
 
 class Drone(Node):
 
     def __init__(self):
-        global drone_id
+        global drone_id, priority
 
         super().__init__('Drone')
         self.cli = self.create_client(AdvService, '/advertisement_service')

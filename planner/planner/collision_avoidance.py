@@ -2,6 +2,7 @@ from geometry_msgs.msg import PoseStamped
 from .hits_toolsv2 import *
 from syst_msgs.msg import StringArray
 from std_msgs.msg import Float32
+from syst_msgs.msg import Waypoints
 
 import rclpy
 from rclpy.node import Node 
