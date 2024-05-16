@@ -1,8 +1,8 @@
 from geometry_msgs.msg import PoseStamped
 from .hits_toolsv2 import *
 from syst_msgs.msg import StringArray
-from std_msgs.msg import Float32
 from syst_msgs.msg import Waypoints
+import numpy as np
 
 import rclpy
 from rclpy.node import Node 
@@ -13,6 +13,7 @@ class Collision_avoidance(Node):
         self.get_logger().info('Publishing: COLLISION AVOIDANCE')
         self.positions = [0]
         self.initial_positions = [0]  #It will be used to define the drone trajectories
+        self.waypoints = [0]
         self.countDiffDrones = 0  #Controls if the position of all drones have arrived
         self.drone_ids_subscription = self.create_subscription(StringArray, f'drone_ids', self.drone_ids_callback, 10)
 
@@ -21,6 +22,7 @@ class Collision_avoidance(Node):
         self.get_logger().info('Receiving drones ids COLLISION AVOIDANCE')
         self.positions = self.positions * len(drone_ids)
         self.initial_positions = self.initial_positions * len(drone_ids)
+        self.waypoints = self.waypoints * len(drone_ids)
         for drone_id in drone_ids:
             Pose_subscription(drone_id, len(drone_ids), self)  #It creates one subscription for the pos of each drone
 
@@ -31,15 +33,13 @@ class Pose_subscription(Node):
         self.index = int(drone_id.replace("drone_", ""))
         self.collision_avoidance = collision_avoidance
         self.nDrones = nDrones
-        self.get_logger().info('DRONE_ID %s' % (drone_id))
+        self.wps_subscription = self.collision_avoidance.create_subscription(Waypoints, f'/{drone_id}/route', self.waypoints_callback, 10)
         self.pose_subscription = self.collision_avoidance.create_subscription(PoseStamped, f'/{drone_id}/pose', self.new_pose_callback, 10)
-        self.pose_subscription
         #self.collision_avoidance.set_publisher(self.index, self.create_publisher(Float32, f'/{drone_id}/collision_avoidance', 10))
         
         
     def new_pose_callback(self, msg):
         self.count += 1
-        # self.get_logger().info('HOLAAAAAAAAAAAAAAAAAAAA')
         if self.count % 5 == 0:
             # self.get_logger().info('MACAWI22 %s' % type(positions))
             self.collision_avoidance.positions[self.index] = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
@@ -48,13 +48,53 @@ class Pose_subscription(Node):
                 hits_tool = Hits_toolsv2(self.collision_avoidance.initial_positions, self.collision_avoidance.positions, [1])
                 result = hits_tool.hit()
                 for e in result:
-                    self.get_logger().info('Drone %d se modifica en %d' % (e[0], e[1]))
+                    self.get_logger().info('HOLAAAAAAAAAAAAAAAA')
+                    actualPos = self.collision_avoidance.positions[e[0]]
+                    next_waypoint = self.next_waypoint(self.collision_avoidance.waypoints[e[0]], actualPos)
+                    distance = np.linalg.norm(actualPos - next_waypoint)
+                    if (distance < 10):
+                        next_waypoint[2] += e[1]
+                    else:
+                        vector = next_waypoint - actualPos 
+                        module = np.linalg.norm(vector)
+                        vector = (vector / module) * 10
+                        next_waypoint[0] =  actualPos[0] + vector[0]
+                        next_waypoint[1] =  actualPos[1] + vector[1]
+                        next_waypoint[2] =  actualPos[2] + e[1]
+                    self.get_logger().info('ADIOOOOS %s %s' % (next_waypoint, actualPos))
                 #     msg = Float32()
                 #     msg.data = float(e[1])
                 #     self.collision_avoidance.publishers[e[0]].publish(msg)
                 #     self.get_logger().info('Publishing: "%d"' % int(msg.data))
         elif self.count % 5 == 1:
             self.collision_avoidance.initial_positions[self.index] = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
+
+    def waypoints_callback(self, msg):
+        self.collision_avoidance.waypoints[self.index] = np.array(msg.wps, dtype=np.float64).reshape((int)(len(msg.wps)/3), 3)
+    
+    def next_waypoint(self, waypoints, position):
+        finded = True
+        i = 0
+        j = 1
+        while not finded:
+                self.get_logger().info('HOLAAAAAAAAAAAAAAAAAAAAAA')
+                finded = self.same_line(waypoints[i], position, waypoints[j])
+                i += 1
+                j += 1
+        return waypoints[j]
+        
+
+    def same_line(point0, point1, point2) -> bool:
+        vector1 = (point1[0] - point0[0], point1[1] - point0[1], point1[2] - point0[2])
+        vector2 = (point2[0] - point0[0], point2[1] - point0[1], point2[2] - point0[2])
+
+        diff_x = vector1[1] * vector2[2] - vector1[2] * vector2[1]
+        diff_y = vector1[2] * vector2[0] - vector1[0] * vector2[2]
+        diff_z = vector1[0] * vector2[1] - vector1[1] * vector2[0]
+
+        if abs(diff_x) < 0.001 and abs(diff_y) < 0.001 and abs(diff_z) < 0.001:
+            return True
+        return False
 
 def main():
     rclpy.init()
