@@ -14,7 +14,8 @@ class Collision_avoidance(Node):
         self.positions = [0]
         self.initial_positions = [0]  #It will be used to define the drone trajectories
         self.waypoints = [0]
-        self.countDiffDrones = 0  #Controls if the position of all drones have arrived
+        self.prev_result = []
+        self.countDiffDrones = [0]  #Controls if the position of all drones have arrived
         self.drone_ids_subscription = self.create_subscription(StringArray, f'drone_ids', self.drone_ids_callback, 10)
 
     def drone_ids_callback(self, msg):
@@ -23,6 +24,7 @@ class Collision_avoidance(Node):
         self.positions = self.positions * len(drone_ids)
         self.initial_positions = self.initial_positions * len(drone_ids)
         self.waypoints = self.waypoints * len(drone_ids)
+        self.countDiffDrones = self.countDiffDrones * len(drone_ids)
         for drone_id in drone_ids:
             Pose_subscription(drone_id, len(drone_ids), self)  #It creates one subscription for the pos of each drone
 
@@ -41,31 +43,33 @@ class Pose_subscription(Node):
     def new_pose_callback(self, msg):
         self.count += 1
         if self.count % 5 == 0:
-            # self.get_logger().info('MACAWI22 %s' % type(positions))
             self.collision_avoidance.positions[self.index] = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
-            self.collision_avoidance.countDiffDrones += 1
-            if self.collision_avoidance.countDiffDrones % self.nDrones == 0:
+            self.collision_avoidance.countDiffDrones[self.index] = 1
+
+            if self.collision_avoidance.countDiffDrones == ([1] * self.nDrones):
+                self.collision_avoidance.countDiffDrones = ([0] * self.nDrones)
                 hits_tool = Hits_toolsv2(self.collision_avoidance.initial_positions, self.collision_avoidance.positions, [1])
                 result = hits_tool.hit()
-                for e in result:
-                    self.get_logger().info('HOLAAAAAAAAAAAAAAAA')
-                    actualPos = self.collision_avoidance.positions[e[0]]
-                    next_waypoint = self.next_waypoint(self.collision_avoidance.waypoints[e[0]], actualPos)
-                    distance = np.linalg.norm(actualPos - next_waypoint)
-                    if (distance < 10):
-                        next_waypoint[2] += e[1]
-                    else:
-                        vector = next_waypoint - actualPos 
-                        module = np.linalg.norm(vector)
-                        vector = (vector / module) * 10
-                        next_waypoint[0] =  actualPos[0] + vector[0]
-                        next_waypoint[1] =  actualPos[1] + vector[1]
-                        next_waypoint[2] =  actualPos[2] + e[1]
-                    self.get_logger().info('ADIOOOOS %s %s' % (next_waypoint, actualPos))
-                #     msg = Float32()
-                #     msg.data = float(e[1])
-                #     self.collision_avoidance.publishers[e[0]].publish(msg)
-                #     self.get_logger().info('Publishing: "%d"' % int(msg.data))
+                if len(result) != 0 and result != self.collision_avoidance.prev_result:
+                    self.collision_avoidance.prev_result = result
+                    for e in result:
+                        actualPos = self.collision_avoidance.positions[e[0]]
+                        next_waypoint = self.next_waypoint(self.collision_avoidance.waypoints[e[0]], actualPos)
+                        distance = np.linalg.norm(actualPos - next_waypoint)
+                        if (distance < 10):
+                            next_waypoint[2] += e[1]
+                        else:
+                            vector = next_waypoint - actualPos 
+                            module = np.linalg.norm(vector)
+                            vector = (vector / module) * 10
+                            next_waypoint[0] =  actualPos[0] + vector[0]
+                            next_waypoint[1] =  actualPos[1] + vector[1]
+                            next_waypoint[2] =  actualPos[2] + e[1]
+                        self.get_logger().info('ADIOOOOS %s %s' % (next_waypoint, actualPos))
+                    #     msg = Float32()
+                    #     msg.data = float(e[1])
+                    #     self.collision_avoidance.publishers[e[0]].publish(msg)
+                    #     self.get_logger().info('Publishing: "%d"' % int(msg.data))
         elif self.count % 5 == 1:
             self.collision_avoidance.initial_positions[self.index] = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
 
@@ -77,7 +81,6 @@ class Pose_subscription(Node):
         i = 0
         j = 1
         while not finded:
-                self.get_logger().info('HOLAAAAAAAAAAAAAAAAAAAAAA')
                 finded = self.same_line(waypoints[i], position, waypoints[j])
                 i += 1
                 j += 1
