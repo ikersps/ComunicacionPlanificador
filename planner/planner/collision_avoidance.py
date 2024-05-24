@@ -35,6 +35,7 @@ class Pose_subscription(Node):
         self.index = int(drone_id.replace("drone_", ""))
         self.collision_avoidance = collision_avoidance
         self.nDrones = nDrones
+        self.prevCount = 0
         self.wps_subscription = self.collision_avoidance.create_subscription(Waypoints, f'/{drone_id}/route', self.waypoints_callback, 10)
         self.pose_subscription = self.collision_avoidance.create_subscription(PoseStamped, f'/{drone_id}/pose', self.new_pose_callback, 10)
         #self.collision_avoidance.set_publisher(self.index, self.create_publisher(Float32, f'/{drone_id}/collision_avoidance', 10))
@@ -47,10 +48,14 @@ class Pose_subscription(Node):
             self.collision_avoidance.countDiffDrones[self.index] = 1
 
             if self.collision_avoidance.countDiffDrones == ([1] * self.nDrones):
+                
                 self.collision_avoidance.countDiffDrones = ([0] * self.nDrones)
                 hits_tool = Hits_toolsv2(self.collision_avoidance.initial_positions, self.collision_avoidance.positions, [1])
                 result = hits_tool.hit()
-                if len(result) != 0 and result != self.collision_avoidance.prev_result:
+
+                #If the difference between count and prevCount equals to 30 it means that about 3
+                #seconds would have passed since the last time collisions were checked
+                if len(result) != 0 and (self.count - self.prevCount >= 30 or result != self.collision_avoidance.prev_result):
                     self.collision_avoidance.prev_result = result
                     for e in result:
                         actualPos = self.collision_avoidance.positions[e[0]]
