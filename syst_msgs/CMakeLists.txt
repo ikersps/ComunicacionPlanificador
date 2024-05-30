@@ -28,6 +28,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/AdvService.srv"
   "msg/Waypoints.msg"
   "msg/StringArray.msg"
+  "msg/DronePriority.msg"
+  "msg/IntArray.msg"
 )
 
 ament_package()
