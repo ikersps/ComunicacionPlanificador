@@ -58,6 +58,7 @@ class Pose_subscription(Node):
                 #If the difference between count and prevCount equals to 30 it means that about 3
                 #seconds would have passed since the last time collisions were checked
                 if len(result) != 0 and (self.count - self.prevCount >= 30 or result != self.collision_avoidance.prev_result):
+                    self.get_logger().info('COLLISION AVOIDANCE result = %s' % result)
                     self.collision_avoidance.prev_result = result
                     idsMsg = IntArray()
                     idsMsg.ids = result

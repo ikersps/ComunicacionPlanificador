@@ -17,7 +17,7 @@ class Hits_toolsv3():
             for j in range(i+1, len(self.final_positions)):
                 if (abs(self.final_positions[i][2] - self.final_positions[j][2]) <= 1.5):  #In very different heights it does not need hit verification
                     distance = np.linalg.norm(np.array(self.final_positions[i]) - np.array(self.final_positions[j]))
-                    if distance < 4 * self.sizeDrone:
+                    if distance < 10 * self.sizeDrone:
                         initial_distance = np.linalg.norm(np.array(self.initial_positions[i]) - np.array(self.initial_positions[j]))
                         if (initial_distance >= distance):  #They are getting closer
                             result.add(i)
