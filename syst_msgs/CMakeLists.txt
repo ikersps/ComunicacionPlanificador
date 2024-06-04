@@ -30,6 +30,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/StringArray.msg"
   "msg/DronePriority.msg"
   "msg/IntArray.msg"
+  "msg/DoubleArray.msg"
 )
 
 ament_package()

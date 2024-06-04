@@ -1,5 +1,5 @@
 from syst_msgs.srv import AdvService
-from syst_msgs.msg import Waypoints, StringArray
+from syst_msgs.msg import Waypoints, StringArray, DoubleArray
 import rclpy
 from rclpy.node import Node
 
@@ -21,12 +21,14 @@ class Station(Node):
         
         global i, flight_height
         i = self.declare_parameter('drones_quantity', 0.0).get_parameter_value().double_value
+        self.speeds = [0]
+        self.speeds = self.speeds * int(i)  
         flight_height = self.declare_parameter('flight_height', 0.0).get_parameter_value().double_value
         self.srv = self.create_service(AdvService, '/advertisement_service', self.register_drone)
 
     def register_drone(self, request, response):
         global service_active, drones, i, wps_metadata
-        
+
         if service_active:
             response.response = 1.0
             self.get_logger().info('Incoming request\ndrone_id: %s speed: %d tof: %d sweep_width: %d\ncoordx: %d, coordy: %d' % (request.drone_id, \
@@ -34,15 +36,22 @@ class Station(Node):
             
             drones.append([request.coordx, request.coordy, request.sweep_width, request.speed, request.tof])
             wps_metadata.add_drone(Drone_initial(request.drone_id, (request.coordx, request.coordy)), request.sweep_width)
+            self.get_logger().info('DRONE %s' % request.drone_id)
+            self.speeds[int(request.drone_id.replace("drone_", ""))] = request.speed
 
             i = i-1
             if i == 0:
                 service_active = False
-
+                
                 publisher_drone_ids = self.create_publisher(StringArray, f'/drone_ids', 10)
                 msg = StringArray()
                 msg.drone_ids = wps_metadata.flatten_str()
                 publisher_drone_ids.publish(msg)
+
+                publisher_speeds = self.create_publisher(DoubleArray, f'/speeds', 10)
+                msg2 = DoubleArray()
+                msg2.speeds = self.speeds
+                publisher_speeds.publish(msg2)
                 
                 self.publish_wps()
             return response

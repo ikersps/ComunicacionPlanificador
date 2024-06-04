@@ -1,6 +1,6 @@
 from geometry_msgs.msg import PoseStamped
 from .hits_toolsv3 import *
-from syst_msgs.msg import StringArray, IntArray
+from syst_msgs.msg import StringArray, IntArray, DoubleArray
 from syst_msgs.msg import Waypoints
 import numpy as np
 
@@ -16,7 +16,10 @@ class Collision_avoidance(Node):
         self.publishers_ = [0]
         self.prev_result = []
         self.countDiffDrones = [0]  #Controls if the position of all drones have arrived
+        self.prevCount = 0
+        self.speeds = []
         self.drone_ids_subscription = self.create_subscription(StringArray, f'/drone_ids', self.drone_ids_callback, 10)
+        self.speeds_subscription = self.create_subscription(DoubleArray, f'/speeds', self.speeds_callback, 10)
 
     def drone_ids_callback(self, msg):
         drone_ids = msg.drone_ids
@@ -27,6 +30,9 @@ class Collision_avoidance(Node):
         self.countDiffDrones = self.countDiffDrones * len(drone_ids)
         for drone_id in drone_ids:
             Pose_subscription(drone_id, len(drone_ids), self)  #It creates one subscription for the pos of each drone
+    
+    def speeds_callback(self, msg):
+        self.speeds = msg.speeds
 
 class Pose_subscription(Node):
     def __init__(self, drone_id, nDrones, collision_avoidance):
@@ -35,12 +41,9 @@ class Pose_subscription(Node):
         self.index = int(drone_id.replace("drone_", ""))
         self.collision_avoidance = collision_avoidance
         self.nDrones = nDrones
-        self.prevCount = 0
 
-        # self.wps_subscription = self.collision_avoidance.create_subscription(Waypoints, f'/{drone_id}/route', self.waypoints_callback, 10)
         self.collision_avoidance.publishers_[self.index] = self.create_publisher(IntArray, f'/{drone_id}/collisions', 10)
         self.pose_subscription = self.collision_avoidance.create_subscription(PoseStamped, f'/{drone_id}/pose', self.new_pose_callback, 10)
-        #self.collision_avoidance.set_publisher(self.index, self.create_publisher(Float32, f'/{drone_id}/collision_avoidance', 10))
         
         
     def new_pose_callback(self, msg):
@@ -52,13 +55,14 @@ class Pose_subscription(Node):
             if self.collision_avoidance.countDiffDrones == ([1] * self.nDrones):
                 
                 self.collision_avoidance.countDiffDrones = ([0] * self.nDrones)
-                hits_tool = Hits_toolsv3(self.collision_avoidance.initial_positions, self.collision_avoidance.positions, [1])
+                hits_tool = Hits_toolsv3(self.collision_avoidance.initial_positions, self.collision_avoidance.positions, self.collision_avoidance.speeds, [1])
                 result = hits_tool.nearest_positions()
 
                 #If the difference between count and prevCount equals to 30 it means that about 3
                 #seconds would have passed since the last time collisions were checked
-                if len(result) != 0 and (self.count - self.prevCount >= 30 or result != self.collision_avoidance.prev_result):
-                    self.get_logger().info('COLLISION AVOIDANCE result = %s' % result)
+                if len(result) != 0 and (self.count - self.collision_avoidance.prevCount >= 60 or result != self.collision_avoidance.prev_result):
+                    self.get_logger().info('COLLISION AVOIDANCE result = %s COUNT = %d PREVCOUNT = %d' % (result, self.count, self.collision_avoidance.prevCount))
+                    self.collision_avoidance.prevCount = self.count
                     self.collision_avoidance.prev_result = result
                     idsMsg = IntArray()
                     idsMsg.ids = result
