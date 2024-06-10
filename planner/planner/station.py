@@ -1,5 +1,5 @@
 from syst_msgs.srv import AdvService
-from syst_msgs.msg import Waypoints, StringArray
+from syst_msgs.msg import Waypoints, StringArray, DoubleArray
 import rclpy
 from rclpy.node import Node
 
@@ -21,6 +21,8 @@ class Station(Node):
         
         global i, flight_height
         i = self.declare_parameter('drones_quantity', 0.0).get_parameter_value().double_value
+        self.speeds = [0]
+        self.speeds = self.speeds * int(i)  
         flight_height = self.declare_parameter('flight_height', 0.0).get_parameter_value().double_value
         self.srv = self.create_service(AdvService, '/advertisement_service', self.register_drone)
 
@@ -34,6 +36,7 @@ class Station(Node):
             
             drones.append([request.coordx, request.coordy, request.sweep_width, request.speed, request.tof])
             wps_metadata.add_drone(Drone_initial(request.drone_id, (request.coordx, request.coordy)), request.sweep_width)
+            self.speeds[int(request.drone_id.replace("drone_", ""))] = request.speed
 
             i = i-1
             if i == 0:
@@ -43,6 +46,11 @@ class Station(Node):
                 msg = StringArray()
                 msg.drone_ids = wps_metadata.flatten_str()
                 publisher_drone_ids.publish(msg)
+
+                publisher_speeds = self.create_publisher(DoubleArray, f'/speeds', 10)
+                msg2 = DoubleArray()
+                msg2.speeds = self.speeds
+                publisher_speeds.publish(msg2)
                 
                 self.publish_wps()
             return response
