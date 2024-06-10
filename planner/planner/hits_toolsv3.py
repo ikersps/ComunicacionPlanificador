@@ -1,3 +1,5 @@
+#These are the hits tools used in the distributed solution
+
 import numpy as np
 
 class Hits_toolsv3():
@@ -26,11 +28,14 @@ class Hits_toolsv3():
                         initial_distance = np.linalg.norm(p1_initial - p2_initial)
                         if (initial_distance >= distance):  #They are getting closer
                             intersection = self.trajectory_intersection(p1_initial, p1_final, p2_initial, p2_final)
-                            d1 = np.linalg.norm(intersection - p1_initial)
-                            d2 = np.linalg.norm(intersection - p1_initial)
+                            intersection = [intersection[0], intersection[1], p1_final[2]]
+                            d1 = np.linalg.norm(intersection - p1_final)
+                            d2 = np.linalg.norm(intersection - p2_final)
                             t1 = d1 / self.speeds[i]
                             t2 = d2 / self.speeds[j]
-                            if ((d1 < 10 or d2 < 10) and abs(t2 - t1) <= 2):
+                            print(t2)
+                            print(t1)
+                            if ((d1 < 10 * self.sizeDrone or d2 < 10 * self.sizeDrone) and abs(t2 - t1) <= 2):
                                 result.add(i)
                                 result.add(j)
 
@@ -51,3 +56,12 @@ class Hits_toolsv3():
         
         intersection = p1_2d + t * d1
         return intersection
+    
+final_positions = [(1, 1, 1), (1, 0, 1)]
+initial_positions = [(0, 0, 1), (0, 1, 1)]
+speeds = [30, 0.5]
+sizes = [1]
+
+hits_tools = Hits_toolsv3(initial_positions, final_positions, speeds, sizes)
+
+print(hits_tools.nearest_positions())

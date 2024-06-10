@@ -23,7 +23,6 @@ class Collision_avoidance(Node):
 
     def drone_ids_callback(self, msg):
         drone_ids = msg.drone_ids
-        self.get_logger().info('Receiving drones ids COLLISION AVOIDANCE')
         self.positions = self.positions * len(drone_ids)
         self.initial_positions = self.initial_positions * len(drone_ids)
         self.publishers_ = self.publishers_ * len(drone_ids)
@@ -61,7 +60,7 @@ class Pose_subscription(Node):
                 #If the difference between count and prevCount equals to 30 it means that about 3
                 #seconds would have passed since the last time collisions were checked
                 if len(result) != 0 and (self.count - self.collision_avoidance.prevCount >= 60 or result != self.collision_avoidance.prev_result):
-                    self.get_logger().info('COLLISION AVOIDANCE result = %s COUNT = %d PREVCOUNT = %d' % (result, self.count, self.collision_avoidance.prevCount))
+                    
                     self.collision_avoidance.prevCount = self.count
                     self.collision_avoidance.prev_result = result
                     idsMsg = IntArray()
