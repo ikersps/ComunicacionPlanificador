@@ -15,7 +15,9 @@ class WpsPublisher(Node):
 
         super().__init__('wps_publisher')
 
-        self.priority = random.randint(0, 3)
+        #self.priority = random.randint(0, 3)
+        self.priority = self.declare_parameter('priority', 30).get_parameter_value().integer_value
+        self.get_logger().info('PRIORITY ======= %d' % self.priority)
         self.priority_pub_sub = [0]
         
         self.cli = self.create_client(AdvService, '/advertisement_service')
