@@ -8,17 +8,16 @@ from syst_msgs.srv import AdvService
 import time
 import numpy as np
 
-drone_id = ''
-
 class WpsPublisher(Node):
     def __init__(self):
 
         super().__init__('wps_publisher')
 
-        #self.priority = random.randint(0, 3)
         self.priority = self.declare_parameter('priority', 30).get_parameter_value().integer_value
-        self.get_logger().info('PRIORITY ======= %d' % self.priority)
         self.priority_pub_sub = [0]
+
+        self.quantityDrones = 0
+        self.seconds = 0
         
         self.cli = self.create_client(AdvService, '/advertisement_service')
         self.drone_id = self.declare_parameter('drone_id', 'drone_x').get_parameter_value().string_value
@@ -75,8 +74,18 @@ class WpsPublisher(Node):
     def priority_callback(self, msg):
         index2 = int(msg.id.replace("drone_", ""))
 
-        if msg.priority > self.priority or (msg.priority == self.priority and index2 > self.index):
-            self.get_logger().info('STOP %s' % self.drone_id)
+        if self.quantityDrones > 0:
+            self.quantityDrones -= 1
+            if msg.priority > self.priority or (msg.priority == self.priority and index2 > self.index):
+                self.seconds += 3
+
+            self.get_logger().info('%d quantity' % self.quantityDrones)
+            self.get_logger().info('%d seconds' % self.seconds)
+
+            if self.quantityDrones == 0 and self.seconds != 0:  #It was the last drone in the collision risk
+                self.get_logger().info('STOP %s during %d seconds' % (self.drone_id, self.seconds))
+                self.seconds = 0
+
 
     def collisions_callback(self, msg):
         ids = msg.ids
@@ -84,7 +93,8 @@ class WpsPublisher(Node):
         priorityMsg = DronePriority()
         priorityMsg.id = self.drone_id
         priorityMsg.priority = self.priority
-
+        
+        self.quantityDrones = len(msg.ids) - 1
         for id in ids:
             if id != self.index:
                 self.priority_pub_sub[id].publish(priorityMsg)
