@@ -23,27 +23,28 @@ class Collision_avoidance(Node):
         self.speeds_subscription = self.create_subscription(DoubleArray, f'/speeds', self.speeds_callback, 10)
 
     def drone_ids_callback(self, msg):
-        drone_ids = msg.drone_ids
+        self.drone_ids = msg.drone_ids
         self.get_logger().info('Receiving drones ids COLLISION AVOIDANCE')
-        self.positions = self.positions * len(drone_ids)
-        self.initial_positions = self.initial_positions * len(drone_ids)
-        self.waypoints = self.waypoints * len(drone_ids)
-        self.next_waypoints = self.next_waypoints * len(drone_ids)
-        self.countDiffDrones = self.countDiffDrones * len(drone_ids)
+        self.positions = self.positions * len(self.drone_ids)
+        self.initial_positions = self.initial_positions * len(self.drone_ids)
+        self.waypoints = self.waypoints * len(self.drone_ids)
+        self.next_waypoints = self.next_waypoints * len(self.drone_ids)
+        self.countDiffDrones = self.countDiffDrones * len(self.drone_ids)
         index = 0
-        for _ in drone_ids:
-            Pose_subscription(index, len(drone_ids), self)  #It creates one subscription for the pos of each drone
+        for _ in self.drone_ids:
+            Pose_subscription(index, len(self.drone_ids), self)  #It creates one subscription for the pos of each drone
             index += 1
 
     def speeds_callback(self, msg):
             self.speeds = msg.speeds
 class Pose_subscription(Node):
     def __init__(self, index, nDrones, collision_avoidance):
-        drone_id = "drone_" + str(index)
+        self.collision_avoidance = collision_avoidance
+        drone_id = self.collision_avoidance.drone_ids[index]
         super().__init__('Collision_avoidance' + drone_id)
+        self.get_logger().info('INDEX %d ID %s' % (index, drone_id))
         self.count = 0  #Counts the amount of positions of the same drone
         self.index = index
-        self.collision_avoidance = collision_avoidance
         self.nDrones = nDrones
         self.wps_subscription = self.collision_avoidance.create_subscription(Waypoints, f'/{drone_id}/route', self.waypoints_callback, 10)
         self.pose_subscription = self.collision_avoidance.create_subscription(PoseStamped, f'/{drone_id}/pose', self.new_pose_callback, 10)
