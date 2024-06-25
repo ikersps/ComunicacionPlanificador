@@ -46,6 +46,7 @@ class Pose_subscription(Node):
         self.count = 0  #Counts the amount of positions of the same drone
         self.index = index
         self.nDrones = nDrones
+        self.posWps = [0] * nDrones 
         self.wps_subscription = self.collision_avoidance.create_subscription(Waypoints, f'/{drone_id}/route', self.waypoints_callback, 10)
         self.pose_subscription = self.collision_avoidance.create_subscription(PoseStamped, f'/{drone_id}/pose', self.new_pose_callback, 10)
         #self.collision_avoidance.set_publisher(self.index, self.create_publisher(Float32, f'/{drone_id}/collision_avoidance', 10))
@@ -61,8 +62,9 @@ class Pose_subscription(Node):
                 self.collision_avoidance.countDiffDrones = ([0] * self.nDrones)
 
                 for i in range(self.nDrones):
-                    self.collision_avoidance.next_waypoints[i] = self.next_waypoint(self.collision_avoidance.waypoints[i], self.collision_avoidance.positions[i])
-
+                    next_wps = self.next_waypoint(self.collision_avoidance.waypoints[i], self.collision_avoidance.positions[i])
+                    self.collision_avoidance.next_waypoints[i] = next_wps[1]
+                    self.posWps[i] = next_wps[0]
                 hits_tool = Hits_toolsv2(self.collision_avoidance.initial_positions, self.collision_avoidance.positions, self.collision_avoidance.speeds, self.collision_avoidance.next_waypoints)
                 result = hits_tool.hit()
 
@@ -78,7 +80,7 @@ class Pose_subscription(Node):
                         distance = np.linalg.norm(actualPos - next_waypoint)
                         if (distance < 10):
                             next_waypoint[2] += e[1]
-                            self.collision_avoidance.next_waypoints[e[0]] = next_waypoint
+                            self.collision_avoidance.waypoints[e[0]][self.posWps] = next_waypoint
                         else:
                             vector = next_waypoint - actualPos 
                             module = np.linalg.norm(vector)
@@ -86,7 +88,7 @@ class Pose_subscription(Node):
                             next_waypoint[0] =  actualPos[0] + vector[0]
                             next_waypoint[1] =  actualPos[1] + vector[1]
                             next_waypoint[2] =  actualPos[2] + e[1]
-                            self.collision_avoidance.next_waypoints.insert(e[0], next_waypoint)
+                            np.insert(self.collision_avoidance.waypoints[e[0]], self.posWps, next_waypoint)
                         self.get_logger().info('ADIOOOOS %s %s' % (next_waypoint, actualPos))
                     #     msg = Float32()
                     #     msg.data = float(e[1])
@@ -106,7 +108,7 @@ class Pose_subscription(Node):
                 finded = self.same_line(waypoints[i], position, waypoints[j])
                 i += 1
                 j += 1
-        return waypoints[j]
+        return [j, waypoints[j]]
         
 
     def same_line(point0, point1, point2) -> bool:
