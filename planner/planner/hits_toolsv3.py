@@ -54,11 +54,3 @@ class Hits_toolsv3():
         intersection = p1_2d + t * d1
         return intersection
     
-final_positions = [(1, 1, 1), (1, 0, 1)]
-initial_positions = [(0, 0, 1), (0, 1, 1)]
-speeds = [30, 0.5]
-sizes = [1]
-
-hits_tools = Hits_toolsv3(initial_positions, final_positions, speeds, sizes)
-
-print(hits_tools.nearest_positions())

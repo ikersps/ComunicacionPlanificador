@@ -14,6 +14,7 @@ class Collision_avoidance(Node):
         self.positions = [0]
         self.initial_positions = [0]  #It will be used to define the drone trajectories
         self.publishers_ = [0]
+        self.waypoints = [0]
         self.next_waypoints = [0]
         self.prev_result = []
         self.countDiffDrones = [0]  #Controls if the position of all drones have arrived
@@ -28,7 +29,9 @@ class Collision_avoidance(Node):
         self.initial_positions = self.initial_positions * len(self.drone_ids)
         self.publishers_ = self.publishers_ * len(self.drone_ids)
         self.countDiffDrones = self.countDiffDrones * len(self.drone_ids)
+        self.waypoints = self.waypoints * len(self.drone_ids)
         self.next_waypoints = self.next_waypoints * len(self.drone_ids)
+        index = 0
         for _ in self.drone_ids:
             Pose_subscription(index, len(self.drone_ids), self)  #It creates one subscription for the pos of each drone
             index += 1
@@ -62,7 +65,6 @@ class Pose_subscription(Node):
 
                 for i in range(self.nDrones):
                     self.collision_avoidance.next_waypoints[i] = self.next_waypoint(self.collision_avoidance.waypoints[i], self.collision_avoidance.positions[i])
-                
                 hits_tool = Hits_toolsv3(self.collision_avoidance.initial_positions, self.collision_avoidance.positions, self.collision_avoidance.speeds, self.collision_avoidance.next_waypoints)
                 result = hits_tool.nearest_positions()
 
@@ -74,6 +76,7 @@ class Pose_subscription(Node):
                     self.collision_avoidance.prev_result = result
                     idsMsg = IntArray()
                     idsMsg.ids = result
+                    self.get_logger().info('RESULTTT %s' % result)
                     for e in result:
                         self.collision_avoidance.publishers_[e].publish(idsMsg)
         elif self.count % 5 == 1:

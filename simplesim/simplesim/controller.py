@@ -21,7 +21,7 @@ class WpsPublisher(Node):
         
         self.cli = self.create_client(AdvService, '/advertisement_service')
         self.drone_id = self.declare_parameter('drone_id', 'drone_x').get_parameter_value().string_value
-        
+        self.index = int(self.drone_id.replace("drone_", ""))
         self.wps_subscription = self.create_subscription(Waypoints, f'/{self.drone_id}/route', self.listener_callback, 10)
         self.get_logger().info('lISTENING TO: "%s"' % f'/{self.drone_id}/route')
 
@@ -92,7 +92,7 @@ class WpsPublisher(Node):
         ids = msg.ids
 
         priorityMsg = DronePriority()
-        priorityMsg.id = self.drone_id
+        priorityMsg.id = "drone_" + str(self.index)
         priorityMsg.priority = self.priority
         
         self.quantityDrones = len(msg.ids) - 1
