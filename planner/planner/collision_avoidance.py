@@ -3,6 +3,7 @@ from .hits_toolsv3 import *
 from syst_msgs.msg import StringArray, IntArray, DoubleArray
 from syst_msgs.msg import Waypoints
 import numpy as np
+import timeit
 
 import rclpy
 from rclpy.node import Node 
@@ -17,6 +18,7 @@ class Collision_avoidance(Node):
         self.waypoints = [0]
         self.next_waypoints = [0]
         self.prev_result = []
+        self.timer = 0
         self.countDiffDrones = [0]  #Controls if the position of all drones have arrived
         self.prevCount = 0
         self.speeds = []
@@ -71,14 +73,15 @@ class Pose_subscription(Node):
                 #If the difference between count and prevCount equals to 30 it means that about 3
                 #seconds would have passed since the last time collisions were checked
                 if len(result) != 0 and (self.count - self.collision_avoidance.prevCount >= 60 or result != self.collision_avoidance.prev_result):
-                    
-                    self.collision_avoidance.prevCount = self.count
-                    self.collision_avoidance.prev_result = result
-                    idsMsg = IntArray()
-                    idsMsg.ids = result
-                    self.get_logger().info('RESULTTT %s' % result)
-                    for e in result:
-                        self.collision_avoidance.publishers_[e].publish(idsMsg)
+                    if not(set(result) - set(self.collision_avoidance.prev_result) == set() and timeit.default_timer() - self.collision_avoidance.timer <= 3*len(self.collision_avoidance.prev_result)):
+                        self.collision_avoidance.prevCount = self.count
+                        self.collision_avoidance.prev_result = result
+                        idsMsg = IntArray()
+                        idsMsg.ids = result
+                        self.get_logger().info('RESULTTT %s' % result)
+                        for e in result:
+                            self.collision_avoidance.publishers_[e].publish(idsMsg)
+                        self.collision_avoidance.timer = timeit.default_timer()
         elif self.count % 5 == 1:
             self.collision_avoidance.initial_positions[self.index] = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
 
