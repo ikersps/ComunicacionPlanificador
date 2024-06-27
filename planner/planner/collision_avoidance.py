@@ -73,7 +73,6 @@ class Pose_subscription(Node):
                 if len(result) != 0 and (self.count - self.collision_avoidance.prevCount >= 60 or result != self.collision_avoidance.prev_result):
                     self.collision_avoidance.prev_result = result
                     self.collision_avoidance.prevCount = self.count
-                    self.get_logger().info('RESUUUULT %s' % result)
                     for e in result:
                         actualPos = self.collision_avoidance.positions[e[0]]
                         next_waypoint = self.collision_avoidance.next_waypoints[e[0]]
@@ -88,8 +87,8 @@ class Pose_subscription(Node):
                             next_waypoint[0] =  actualPos[0] + vector[0]
                             next_waypoint[1] =  actualPos[1] + vector[1]
                             next_waypoint[2] =  actualPos[2] + e[1]
-                            np.insert(self.collision_avoidance.waypoints[e[0]], self.posWps, next_waypoint)
-                        self.get_logger().info('ADIOOOOS %s %s' % (next_waypoint, actualPos))
+                            np.insert(self.collision_avoidance.waypoints[e[0]], self.posWps[e[0]], next_waypoint)
+                        self.get_logger().info('El drone_%d modifica su ruta a %s' % (e[0], next_waypoint))
                     #     msg = Float32()
                     #     msg.data = float(e[1])
                     #     self.collision_avoidance.publishers[e[0]].publish(msg)

@@ -68,7 +68,9 @@ class Station(Node):
         global drones, wps_metadata, flight_height
         wps = planning_algorithm(drones, os.path.join(os.getcwd(), 'install/planner/share/planner/config/perimeter.yaml'), wps_metadata.flatten_str())
 
-        wps = [np.array([[[20, 20],[60, -60]]]),np.array([[[20, -20],[60, 60]]]),np.array([[[-89.2800904, 176.742518],[-130.432652, 79.8706776]]])]
+        # wps = [np.array([[[20, 20],[60, -60]]]),np.array([[[20, -20],[60, 60]]]),np.array([[[-89.2800904, 176.742518],[-130.432652, 79.8706776]]])]
+        # wps = [np.array([[[20, 20],[60, -60],[-10, -100]]]),np.array([[[20, -20],[60, 60],[-10, 100]]])]
+        wps = [np.array([[[-20, 100],[-100, -60]]]),np.array([[[20, 100],[100, -60]]])]
         index = 0
 
         drones_names = wps_metadata.flatten()
