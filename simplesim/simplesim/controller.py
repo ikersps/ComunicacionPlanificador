@@ -80,9 +80,6 @@ class WpsPublisher(Node):
             if msg.priority > self.priority or (msg.priority == self.priority and index2 > self.index):
                 self.seconds += 3
 
-            self.get_logger().info('%d quantity' % self.quantityDrones)
-            self.get_logger().info('%d seconds' % self.seconds)
-
             if self.quantityDrones == 0 and self.seconds != 0:  #It was the last drone in the collision risk
                 self.get_logger().info('STOP %s during %d seconds' % (self.drone_id, self.seconds))
                 self.seconds = 0
