@@ -65,6 +65,8 @@ class Station(Node):
     def publish_wps(self):
         wps = planning_algorithm(self.drones, os.path.join(os.getcwd(), 'install/planner/share/planner/config/perimeter.yaml'), self.wps_metadata.flatten_str())
 
+        wps = [np.array([[[20, 0],[0, 50],[-20,0]]]),np.array([[[-20, 0],[0, 50],[20,0]]]),np.array([[[-20, 100],[0, 50],[20,100]]])]
+
         index = 0
 
         drones_names = self.wps_metadata.flatten()
